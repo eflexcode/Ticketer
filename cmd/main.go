@@ -1,9 +1,12 @@
 package main
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"github.com/gofiber/fiber/v2"
+	"go.mod/database"
+)
 
 func main() {
-
+	database.DBConnect()
 	app := fiber.New()
 
 	app.Get("/", func(c *fiber.Ctx) error {

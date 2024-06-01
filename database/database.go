@@ -1,20 +1,23 @@
 package database
 
 import (
+	"go.mod/model"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"log"
 )
 
+var DbInstance *gorm.DB
+
 func DBConnect() {
 
-	dbUrl := "host=localhost user=postgres password=Larry123 dbName=ticketer port=5432"
+	dbUrl := "host=localhost user=postgres password=Larry123 database=ticketer port=5432"
 
-	db, error := gorm.Open(postgres.Open(dbUrl), &gorm.Config{})
+	dbInstance, error := gorm.Open(postgres.Open(dbUrl), &gorm.Config{})
 
 	if error != nil {
 		log.Fatal("Failed to connect to db")
 	}
 
-	db.AutoMigrate()
+	dbInstance.AutoMigrate(&model.User{}, &model.Organisation{}, &model.Event{}, &model.Ticket{})
 }
