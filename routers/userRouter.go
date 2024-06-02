@@ -59,7 +59,7 @@ func GetUser(ctx *fiber.Ctx) error {
 		return ctx.Status(404).JSON(errMessage)
 	}
 
-	return ctx.Status(200).JSON(user)
+	return ctx.Status(200).JSON(&user)
 }
 
 func PutUser(ctx *fiber.Ctx) error {
@@ -83,7 +83,7 @@ func PutUser(ctx *fiber.Ctx) error {
 	var gottenUser util.User
 
 	if err := ctx.BodyParser(&gottenUser); err != nil {
-		return ctx.Status(400).JSON(err.Error())
+		return ctx.Status(500).JSON(err.Error())
 	}
 
 	if gottenUser.Email != "" {
@@ -101,13 +101,14 @@ func PutUser(ctx *fiber.Ctx) error {
 	if gottenUser.ProfileImageUrl != "" {
 		dbUser.ProfileImageUrl = gottenUser.ProfileImageUrl
 	}
+
 	if gottenUser.CoverImageUrl != "" {
 		dbUser.CoverImageUrl = gottenUser.CoverImageUrl
 	}
 
 	dbInstance.Save(&dbUser)
 
-	return ctx.Status(200).JSON(dbUser)
+	return ctx.Status(200).JSON(&dbUser)
 }
 
 func DeleteUser(ctx *fiber.Ctx) error {
