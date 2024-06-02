@@ -9,7 +9,8 @@ import (
 func main() {
 	db := database.DBConnect()
 	app := fiber.New()
-	routers.UserRouter(app, db)
+	routers.InitDb(db)
+	routers.UserRouter(app)
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("Welcome")

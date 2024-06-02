@@ -9,86 +9,135 @@ import (
 	"time"
 )
 
-func getUser(id int, db *gorm.DB) (model.User, *gorm.DB) {
+var dbInstance *gorm.DB
+
+func InitDb(db *gorm.DB) {
+	dbInstance = db
+}
+
+func getUser(id int) (model.User, *gorm.DB) {
 	var user model.User
-	dbResult := db.Find(&user, "id = ?", id)
+	dbResult := dbInstance.Find(&user, "id = ?", id)
 	return user, dbResult
 }
 
-func UserRouter(app *fiber.App, db *gorm.DB) {
+func CreateUser(ctx *fiber.Ctx) error {
+	var userGotten util.User
 
-	app.Post("/user/", func(ctx *fiber.Ctx) error {
+	if err := ctx.BodyParser(&userGotten); err != nil {
+		return ctx.Status(400).JSON(err.Error())
+	}
 
-		var userGotten util.User
+	timeNow := time.Time{}
+	user := model.User{
+		Email:     userGotten.Email,
+		Username:  userGotten.Username,
+		Password:  userGotten.Password,
+		CreatedAt: timeNow,
+	}
+	dbInstance.Create(&user)
 
-		if err := ctx.BodyParser(&userGotten); err != nil {
-			return ctx.Status(400).JSON(err.Error())
-		}
+	return ctx.Status(200).JSON(&user)
+}
 
-		timeNow := time.Time{}
-		user := model.User{
-			Email:     userGotten.Email,
-			Username:  userGotten.Username,
-			Password:  userGotten.Password,
-			CreatedAt: timeNow,
-		}
-		db.Create(&user)
+func GetUser(ctx *fiber.Ctx) error {
+	id, err := ctx.ParamsInt("id")
 
-		return ctx.Status(200).JSON(&user)
-	})
+	if err != nil {
+		return ctx.Status(400).JSON("Please insert valid id of user (int)")
+	}
 
-	app.Get("/user/:id", func(ctx *fiber.Ctx) error {
+	user, dbResult := getUser(id)
+	dbErr := dbResult.Error
 
-		id, err := ctx.ParamsInt("id")
+	if dbErr != nil {
+		return ctx.Status(500).JSON("Something went wrong")
+	}
 
-		if err != nil {
-			return ctx.Status(400).JSON("Please insert valid id of user (int)")
-		}
+	if user.ID == 0 {
+		errMessage := "No user found with id: " + strconv.Itoa(id)
+		return ctx.Status(404).JSON(errMessage)
+	}
 
-		user, dbResult := getUser(id, db)
-		dbErr := dbResult.Error
+	return ctx.Status(200).JSON(user)
+}
 
-		if dbErr != nil {
-			return ctx.Status(500).JSON("Something went wrong")
-		}
+func PutUser(ctx *fiber.Ctx) error {
+	id, err := ctx.ParamsInt("id")
 
-		if user.ID == 0 {
-			errMessage := "No user found with id: " + strconv.Itoa(id)
-			return ctx.Status(404).JSON(errMessage)
-		}
+	if err != nil {
+		return ctx.Status(400).JSON("Please insert valid id of user (int)")
+	}
 
-		return ctx.Status(200).JSON(user)
-	})
+	dbUser, dbResult := getUser(id)
+	dbErr := dbResult.Error
 
-	app.Put("/user/:id", func(ctx *fiber.Ctx) error {
+	if dbErr != nil {
+		return ctx.Status(500).JSON("Something went wrong")
+	}
 
-		id, err := ctx.ParamsInt("id")
+	if dbUser.ID == 0 {
+		return ctx.Status(400).JSON("No user found with id: " + strconv.Itoa(id))
+	}
 
-		if err != nil {
-			return ctx.Status(400).JSON("Please insert valid id of user (int)")
-		}
+	var gottenUser util.User
 
-		user, dbResult := getUser(id, db)
-		dbErr := dbResult.Error
+	if err := ctx.BodyParser(&gottenUser); err != nil {
+		return ctx.Status(400).JSON(err.Error())
+	}
 
-		if dbErr != nil {
-			return ctx.Status(500).JSON("something went wrong")
-		}
+	if gottenUser.Email != "" {
+		dbUser.Email = gottenUser.Email
+	}
 
-		if user.ID == 0 {
-			return ctx.Status(400).JSON("No user found with id: " + strconv.Itoa(id))
-		}
+	if gottenUser.Password != "" {
+		dbUser.Password = gottenUser.Password
+	}
 
-		var gottenUser util.User
+	if gottenUser.Username != "" {
+		dbUser.Username = gottenUser.Username
+	}
 
-		if err := ctx.BodyParser(&gottenUser); err != nil {
-			return ctx.Status(400).JSON(err.Error())
-		}
+	if gottenUser.ProfileImageUrl != "" {
+		dbUser.ProfileImageUrl = gottenUser.ProfileImageUrl
+	}
+	if gottenUser.CoverImageUrl != "" {
+		dbUser.CoverImageUrl = gottenUser.CoverImageUrl
+	}
 
-		db.Save(&user)
+	dbInstance.Save(&dbUser)
 
-		return ctx.Status(200).JSON(user)
+	return ctx.Status(200).JSON(dbUser)
+}
 
-	})
+func DeleteUser(ctx *fiber.Ctx) error {
+	id, err := ctx.ParamsInt("id")
+
+	if err != nil {
+		return ctx.Status(400).JSON("Please insert valid id of user (int)")
+	}
+
+	user, db := getUser(id)
+	dbError := db.Error
+
+	if dbError != nil {
+		return ctx.Status(500).JSON("Something went wrong")
+	}
+
+	if user.ID == 0 {
+		return ctx.Status(400).JSON("No user found with id: " + strconv.Itoa(id))
+	}
+
+	db.Delete(&user)
+
+	return ctx.Status(200).JSON("Deleted")
+}
+
+func UserRouter(app *fiber.App) {
+
+	app.Post("/user/", CreateUser)
+	app.Get("/user/:id", GetUser)
+	app.Put("/user/:id", PutUser)
+	app.Delete("/user/:id", DeleteUser)
 
 }
