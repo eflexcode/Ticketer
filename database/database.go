@@ -9,7 +9,7 @@ import (
 
 var DbInstance *gorm.DB
 
-func DBConnect() {
+func DBConnect() *gorm.DB {
 
 	dbUrl := "host=localhost user=postgres password=Larry123 database=ticketer port=5432"
 
@@ -18,6 +18,7 @@ func DBConnect() {
 	if error != nil {
 		log.Fatal("Failed to connect to db")
 	}
-
 	dbInstance.AutoMigrate(&model.User{}, &model.Organisation{}, &model.Event{}, &model.Ticket{})
+	return dbInstance
+
 }
