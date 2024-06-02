@@ -10,3 +10,12 @@ type User struct {
 	ProfileImageUrl string `json:"profile_image_url"`
 	CoverImageUrl   string `json:"cover_image_url"`
 }
+
+type Organisation struct {
+	CreatedAt                   time.Time
+	OrganisationName            string `json:"organisation_name"`
+	OrganisationAddress         string `json:"organisation_address"`
+	OrganisationProfileImageUrl string `json:"organisation_profile_image_url"`
+	OrganisationOverImageUrl    string `json:"organisation_cover_image_url"`
+	OrganisationDescription     string `json:"organisation_description"`
+}
