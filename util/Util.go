@@ -13,9 +13,11 @@ type User struct {
 
 type Organisation struct {
 	CreatedAt                   time.Time
-	OrganisationName            string `json:"organisation_name"`
-	OrganisationAddress         string `json:"organisation_address"`
+	OrganisationName            string `json:"organisation_name" validate:"required"`
+	OrganisationEmail           string `json:"organisation_email" validate:"required"`
+	OrganisationPassword        string `json:"organisation_password" validate:"required"`
+	OrganisationAddress         string `json:"organisation_address" validate:"required"`
 	OrganisationProfileImageUrl string `json:"organisation_profile_image_url"`
 	OrganisationOverImageUrl    string `json:"organisation_cover_image_url"`
-	OrganisationDescription     string `json:"organisation_description"`
+	OrganisationDescription     string `json:"organisation_description" validate:"required"`
 }

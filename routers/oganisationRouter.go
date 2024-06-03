@@ -36,6 +36,8 @@ func CreateOrganisation(ctx *fiber.Ctx) error {
 		OrganisationProfileImageUrl: gottenOrganisation.OrganisationProfileImageUrl,
 		OrganisationOverImageUrl:    gottenOrganisation.OrganisationOverImageUrl,
 		OrganisationDescription:     gottenOrganisation.OrganisationDescription,
+		OrganisationEmail:           gottenOrganisation.OrganisationEmail,
+		OrganisationPassword:        gottenOrganisation.OrganisationPassword,
 	}
 
 	dbInstance.Create(&organisation)
@@ -133,7 +135,7 @@ func DeleteOrganisation(ctx *fiber.Ctx) error {
 		return ctx.Status(404).JSON("No Org found wit id: " + strconv.Itoa(id))
 	}
 
-	db.Delete(&db)
+	db.Delete(&dbOrg)
 
 	return ctx.Status(200).JSON("Deleted")
 }
