@@ -50,7 +50,7 @@ func GetOrganisation(ctx *fiber.Ctx) error {
 	id, err := ctx.ParamsInt("id")
 
 	if err != nil {
-		return ctx.Status(400).JSON("Please insert valid id of user (int)")
+		return ctx.Status(400).JSON("Please insert valid id of organisation (int)")
 	}
 
 	organisation, db := getOrganisation(id)

@@ -142,7 +142,7 @@ func DeleteTicket(ctx *fiber.Ctx) error {
 
 func TicketRouter(app *fiber.App) {
 
-	app.Post("/ticket/", CreateOrganisation)
+	app.Post("/ticket/", CreateTicket)
 	app.Get("/ticket/:id", GetOrganisation)
 	app.Put("/ticket/:id", PutOrganisation)
 	app.Delete("/ticket/:id", DeleteOrganisation)

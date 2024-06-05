@@ -13,6 +13,8 @@ func main() {
 	routers.InitDb(db)
 	routers.UserRouter(app)
 	routers.OrganisationRouter(app)
+	routers.EventRouter(app)
+	routers.TicketRouter(app)
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("Welcome")
