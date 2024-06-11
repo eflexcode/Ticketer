@@ -1,6 +1,7 @@
 package routers
 
 import (
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"go.mod/model"
 	"go.mod/util"
@@ -27,6 +28,8 @@ func CreateEvent(ctx *fiber.Ctx) error {
 		return ctx.Status(400).JSON(err.Error())
 	}
 
+	//var numberOfTicketPrinted = numberOfTicketPrinted
+
 	event := model.Event{
 		NumberOFTicketPrinted:   gottenEvent.NumberOFTicketPrinted,
 		NumberOfTicketSold:      gottenEvent.NumberOfTicketSold,
@@ -41,14 +44,17 @@ func CreateEvent(ctx *fiber.Ctx) error {
 		OrganisationId:          gottenEvent.OrganisationId,
 	}
 
-	//organisation := model.Organisation{
-	//	Events: []model.Event{event},
-	//}
+	//organisation, db := getOrganisation(gottenEvent.OrganisationId)
 
-	organisation, db := getOrganisation(gottenEvent.OrganisationId)
+	dbresult := dbInstance.Create(&event)
 
-	organisation.Events = append(organisation.Events, event)
-	db.Save(&organisation)
+	eventID := dbresult.RowsAffected
+
+	var eventid int64 = eventID
+
+	fmt.Printf("db test type", eventid)
+	//db.Save(&organisation)
+
 	//dbInstance.Create(&event)
 
 	return ctx.Status(200).JSON(&event)
@@ -136,8 +142,8 @@ func DeleteEvent(ctx *fiber.Ctx) error {
 func EventRouter(app *fiber.App) {
 
 	app.Post("/event/", CreateEvent)
-	app.Get("/event/:id", GetOrganisation)
-	app.Put("/event/:id", PutOrganisation)
-	app.Delete("/event/:id", DeleteOrganisation)
+	app.Get("/event/:id", GetEvent)
+	app.Put("/event/:id", PutEvent)
+	app.Delete("/event/:id", DeleteEvent)
 
 }
