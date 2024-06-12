@@ -44,18 +44,19 @@ func CreateEvent(ctx *fiber.Ctx) error {
 		OrganisationId:          gottenEvent.OrganisationId,
 	}
 
-	//organisation, db := getOrganisation(gottenEvent.OrganisationId)
-
-	dbresult := dbInstance.Create(&event)
-
-	eventID := dbresult.RowsAffected
-
-	var eventid int64 = eventID
-
-	fmt.Printf("db test type", eventid)
-	//db.Save(&organisation)
+	organisation, db := getOrganisation(gottenEvent.OrganisationId)
+	eventsDb := organisation.Events
+	eventsDb = append(eventsDb, event)
+	organisation.Events = eventsDb
 
 	//dbInstance.Create(&event)
+
+	//eventID := dbresult.RowsAffected
+
+	//var eventid int64 = eventID
+
+	fmt.Printf("db test type " + strconv.Itoa(int(event.ID)))
+	db.Save(&organisation)
 
 	return ctx.Status(200).JSON(&event)
 }
