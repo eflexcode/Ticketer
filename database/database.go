@@ -30,7 +30,7 @@ func DBConnect() *gorm.DB {
 
 func InitMongoDb() *mongo.Client {
 
-	clientOptions := options.Client().ApplyURI("mongo://localhost:27017")
+	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017/")
 	client, err := mongo.Connect(cxt, clientOptions)
 
 	if err != nil {

@@ -2,15 +2,15 @@ package main
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"go.mod/database"
 	"go.mod/routers"
 )
 
 func main() {
-	db := database.DBConnect()
+	//db := database.DBConnect()
 	app := fiber.New()
 
-	routers.InitDb(db)
+	//routers.InitDb(db)
+	routers.InitMongoDb()
 	routers.UserRouter(app)
 	routers.OrganisationRouter(app)
 	routers.EventRouter(app)
