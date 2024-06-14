@@ -6,6 +6,8 @@ import (
 	"go.mod/database"
 	"go.mod/model"
 	"go.mod/util"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"gorm.io/gorm"
 	"log"
@@ -25,11 +27,15 @@ func InitMongoDb() {
 	userCollection = database.GetCollection(mongoClient, "user")
 }
 
-func getUser(id int) (model.User, *gorm.DB) {
-	var user model.User
-	dbResult := dbInstance.Find(&user, "id = ?", id)
-	return user, dbResult
-}
+//func getUser(id string) model.User {
+//
+//	cxt, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+//
+//	var user model.User
+//
+//	dbResult := dbInstance.Find(&user, "id = ?", id)
+//	return user, dbResult
+//}
 
 func CreateUser(ctx *fiber.Ctx) error {
 
@@ -41,6 +47,7 @@ func CreateUser(ctx *fiber.Ctx) error {
 
 	timeNow := time.Time{}
 	user := model.User{
+		ID:        primitive.NewObjectID(),
 		Email:     userGotten.Email,
 		Username:  userGotten.Username,
 		Password:  userGotten.Password,
@@ -65,105 +72,113 @@ func CreateUser(ctx *fiber.Ctx) error {
 	return ctx.Status(200).JSON(result)
 }
 
-//func GetUser(ctx *fiber.Ctx) error {
-//	id, err := ctx.ParamsInt("id")
-//
-//	if err != nil {
-//		return ctx.Status(400).JSON("Please insert valid id of user (int)")
-//	}
-//
-//	user, dbResult := getUser(id)
-//	dbErr := dbResult.Error
-//
-//	if dbErr != nil {
-//		return ctx.Status(500).JSON("Something went wrong")
-//	}
-//
-//	if user.ID == 0 {
-//		errMessage := "No user found with id: " + strconv.Itoa(id)
-//		return ctx.Status(404).JSON(errMessage)
-//	}
-//
-//	return ctx.Status(200).JSON(&user)
-//}
-//
-//func PutUser(ctx *fiber.Ctx) error {
-//	id, err := ctx.ParamsInt("id")
-//
-//	if err != nil {
-//		return ctx.Status(400).JSON("Please insert valid id of user (int)")
-//	}
-//
-//	dbUser, dbResult := getUser(id)
-//	dbErr := dbResult.Error
-//
-//	if dbErr != nil {
-//		return ctx.Status(500).JSON("Something went wrong")
-//	}
-//
-//	if dbUser.ID == 0 {
-//		return ctx.Status(400).JSON("No user found with id: " + strconv.Itoa(id))
-//	}
-//
-//	var gottenUser util.User
-//
-//	if err := ctx.BodyParser(&gottenUser); err != nil {
-//		return ctx.Status(500).JSON(err.Error())
-//	}
-//
-//	if gottenUser.Email != "" {
-//		dbUser.Email = gottenUser.Email
-//	}
-//
-//	if gottenUser.Password != "" {
-//		dbUser.Password = gottenUser.Password
-//	}
-//
-//	if gottenUser.Username != "" {
-//		dbUser.Username = gottenUser.Username
-//	}
-//
-//	if gottenUser.ProfileImageUrl != "" {
-//		dbUser.ProfileImageUrl = gottenUser.ProfileImageUrl
-//	}
-//
-//	if gottenUser.CoverImageUrl != "" {
-//		dbUser.CoverImageUrl = gottenUser.CoverImageUrl
-//	}
-//
-//	dbInstance.Save(&dbUser)
-//
-//	return ctx.Status(200).JSON(&dbUser)
-//}
-//
-//func DeleteUser(ctx *fiber.Ctx) error {
-//	id, err := ctx.ParamsInt("id")
-//
-//	if err != nil {
-//		return ctx.Status(400).JSON("Please insert valid id of user (int)")
-//	}
-//
-//	user, db := getUser(id)
-//	dbError := db.Error
-//
-//	if dbError != nil {
-//		return ctx.Status(500).JSON("Something went wrong")
-//	}
-//
-//	if user.ID == 0 {
-//		return ctx.Status(400).JSON("No user found with id: " + strconv.Itoa(id))
-//	}
-//
-//	db.Delete(&user)
-//
-//	return ctx.Status(200).JSON("Deleted")
-//}
+func GetUser(ctx *fiber.Ctx) error {
+	id := ctx.Params("id")
+
+	if id == "" {
+		return ctx.Status(500).JSON("Something went wrong")
+	}
+
+	var user model.User
+
+	objId, _ := primitive.ObjectIDFromHex(id)
+
+	err := userCollection.FindOne(goCtx, bson.M{"_id": objId}).Decode(&user)
+
+	if err != nil {
+		return ctx.Status(500).JSON(err.Error())
+	}
+
+	return ctx.Status(200).JSON(&user)
+}
+
+func PutUser(ctx *fiber.Ctx) error {
+
+	id := ctx.Params("id")
+
+	//if err != nil {
+	//	return ctx.Status(400).JSON("Please insert valid id of user (int)")
+	//}
+
+	//dbUser, dbResult := getUser(id)
+	//dbErr := dbResult.Error
+
+	var user model.User
+
+	objId, _ := primitive.ObjectIDFromHex(id)
+
+	err := userCollection.FindOne(goCtx, bson.M{"_id": objId}).Decode(&user)
+
+	if err != nil {
+		return ctx.Status(500).JSON(err.Error())
+	}
+
+	var gottenUser util.User
+
+	if err := ctx.BodyParser(&gottenUser); err != nil {
+		return ctx.Status(500).JSON(err.Error())
+	}
+
+	if gottenUser.Email != "" {
+		user.Email = gottenUser.Email
+	}
+
+	if gottenUser.Password != "" {
+		user.Password = gottenUser.Password
+	}
+
+	if gottenUser.Username != "" {
+		user.Username = gottenUser.Username
+	}
+
+	if gottenUser.ProfileImageUrl != "" {
+		user.ProfileImageUrl = gottenUser.ProfileImageUrl
+	}
+
+	if gottenUser.CoverImageUrl != "" {
+		user.CoverImageUrl = gottenUser.CoverImageUrl
+	}
+
+	update := bson.M{"Email": gottenUser.Email}
+	updateResult, err := userCollection.UpdateOne(goCtx, bson.M{"_id": objId}, bson.M{"%set": update})
+	if err != nil {
+		return ctx.Status(500).JSON(err.Error())
+	}
+
+	if updateResult.MatchedCount == 1 {
+		return ctx.Status(200).JSON("Updated user id " + id)
+	}
+
+	return ctx.Status(500).JSON("something went wrong")
+}
+
+func DeleteUser(ctx *fiber.Ctx) error {
+	id := ctx.Params("id")
+
+	if id == "" {
+		return ctx.Status(400).JSON("Please insert valid id of user (int)")
+	}
+
+	obj, _ := primitive.ObjectIDFromHex(id)
+
+	result, err := userCollection.DeleteOne(goCtx, bson.M{"_id": obj})
+
+	if err != nil {
+		return ctx.Status(500).JSON(err.Error())
+	}
+
+	if result.DeletedCount < 1 {
+		return ctx.Status(404).JSON("No user Found with id")
+	}
+
+	return ctx.Status(200).JSON("Deleted")
+}
 
 func UserRouter(app *fiber.App) {
 
 	app.Post("/user/", CreateUser)
-	//app.Get("/user/:id", GetUser)
-	//app.Put("/user/:id", PutUser)
-	//app.Delete("/user/:id", DeleteUser)
+	app.Get("/user/:id", GetUser)
+	app.Put("/user/:id", PutUser)
+	app.Delete("/user/:id", DeleteUser)
 
 }
