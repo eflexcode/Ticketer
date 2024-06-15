@@ -139,8 +139,8 @@ func PutUser(ctx *fiber.Ctx) error {
 		user.CoverImageUrl = gottenUser.CoverImageUrl
 	}
 
-	update := bson.M{"Email": gottenUser.Email}
-	updateResult, err := userCollection.UpdateOne(goCtx, bson.M{"_id": objId}, bson.M{"%set": update})
+	update := bson.M{"email": user.Email, "password": user.Password, "username": user.Username, "profileimageurl": user.ProfileImageUrl, "coverimageUrl": user.CoverImageUrl}
+	updateResult, err := userCollection.UpdateOne(goCtx, bson.M{"_id": objId}, bson.M{"$set": update})
 	if err != nil {
 		return ctx.Status(500).JSON(err.Error())
 	}
