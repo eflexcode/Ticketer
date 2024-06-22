@@ -45,38 +45,32 @@ func CreateUser(ctx *fiber.Ctx) error {
 		return ctx.Status(400).JSON(err.Error())
 	}
 
+	var id = primitive.NewObjectID()
+
 	timeNow := time.Time{}
 	user := model.User{
-		ID:        primitive.NewObjectID(),
+		ID:        id,
 		Email:     userGotten.Email,
 		Username:  userGotten.Username,
 		Password:  userGotten.Password,
 		CreatedAt: timeNow,
 	}
 
-	//dbInstance.Create(&user)
-
-	result, err := userCollection.InsertOne(goCtx, &user)
+	_, err := userCollection.InsertOne(goCtx, &user)
 
 	if err != nil {
 		log.Fatal(err.Error())
 		return ctx.Status(500).JSON("Something went wrong try again")
 	}
 
-	//user.Id = result.InsertedID
-	//
-	//var s string = result.InsertedID
-
-	//	strconv.presult)
-
-	return ctx.Status(200).JSON(result)
+	return ctx.Status(200).JSON(&user)
 }
 
 func GetUser(ctx *fiber.Ctx) error {
 	id := ctx.Params("id")
 
 	if id == "" {
-		return ctx.Status(500).JSON("Something went wrong")
+		return ctx.Status(400).JSON("Please insert valid id of user")
 	}
 
 	var user model.User
@@ -95,13 +89,6 @@ func GetUser(ctx *fiber.Ctx) error {
 func PutUser(ctx *fiber.Ctx) error {
 
 	id := ctx.Params("id")
-
-	//if err != nil {
-	//	return ctx.Status(400).JSON("Please insert valid id of user (int)")
-	//}
-
-	//dbUser, dbResult := getUser(id)
-	//dbErr := dbResult.Error
 
 	var user model.User
 

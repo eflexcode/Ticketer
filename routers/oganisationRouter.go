@@ -2,10 +2,13 @@ package routers
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"go.mod/database"
 	"go.mod/model"
 	"go.mod/util"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"gorm.io/gorm"
-	"strconv"
 	"time"
 )
 
@@ -19,6 +22,12 @@ func getOrganisation(id int) (model.Organisation, *gorm.DB) {
 
 }
 
+var orgCollection *mongo.Collection
+
+func InitMongoOrgCollection() {
+	orgCollection = database.GetCollection(mongoClient, "organisation")
+}
+
 func CreateOrganisation(ctx *fiber.Ctx) error {
 
 	var gottenOrganisation util.Organisation
@@ -28,8 +37,11 @@ func CreateOrganisation(ctx *fiber.Ctx) error {
 		return ctx.Status(400).JSON(err.Error())
 	}
 
+	var id = primitive.NewObjectID()
+
 	timeNow := time.Time{}
 	organisation := model.Organisation{
+		ID:                          id,
 		CreatedAt:                   timeNow,
 		OrganisationName:            gottenOrganisation.OrganisationName,
 		OrganisationAddress:         gottenOrganisation.OrganisationAddress,
@@ -40,29 +52,33 @@ func CreateOrganisation(ctx *fiber.Ctx) error {
 		OrganisationPassword:        gottenOrganisation.OrganisationPassword,
 	}
 
-	dbInstance.Create(&organisation)
+	_, err = orgCollection.InsertOne(goCtx, &organisation)
+
+	if err != nil {
+		//log.Fatal(err.Error())
+		return ctx.Status(500).JSON("Something went wrong try again")
+
+	}
 
 	return ctx.Status(200).JSON(&organisation)
 }
 
 func GetOrganisation(ctx *fiber.Ctx) error {
 
-	id, err := ctx.ParamsInt("id")
+	id := ctx.Params("id")
+
+	if id == "" {
+		return ctx.Status(400).JSON("Please insert valid id of organisation")
+	}
+
+	var organisation model.Organisation
+
+	objID, _ := primitive.ObjectIDFromHex(id)
+
+	err := orgCollection.FindOne(goCtx, bson.M{"_id": objID}).Decode(&organisation)
 
 	if err != nil {
-		return ctx.Status(400).JSON("Please insert valid id of organisation (int)")
-	}
-
-	organisation, db := getOrganisation(id)
-	dbErr := db.Error
-
-	if dbErr != nil {
-		return ctx.Status(500).JSON("Something went wrong")
-	}
-
-	if organisation.ID == 0 {
-		errMessage := "No user found with id: " + strconv.Itoa(id)
-		return ctx.Status(404).JSON(errMessage)
+		return ctx.Status(500).JSON(err.Error())
 	}
 
 	return ctx.Status(200).JSON(&organisation)
@@ -71,77 +87,91 @@ func GetOrganisation(ctx *fiber.Ctx) error {
 
 func PutOrganisation(ctx *fiber.Ctx) error {
 
-	id, err := ctx.ParamsInt("id")
+	id := ctx.Params("id")
+	var organisation model.Organisation
+
+	objId, _ := primitive.ObjectIDFromHex(id)
+
+	err := orgCollection.FindOne(goCtx, bson.M{"_id": objId}).Decode(&organisation)
 
 	if err != nil {
-		return ctx.Status(400).JSON("Please insert valid id of organisation (int)")
-	}
-
-	dbOrganisation, dbReturnedInstance := getOrganisation(id)
-	dbErr := dbReturnedInstance.Error
-
-	if dbErr != nil {
-		return ctx.Status(500).JSON("Something went wrong")
-	}
-
-	if dbOrganisation.ID == 0 {
-		return ctx.Status(404).JSON("No org found with id: " + strconv.Itoa(id))
-	}
-
-	var gottenOrg model.Organisation
-
-	if err := ctx.BodyParser(&gottenOrg); err != nil {
 		return ctx.Status(500).JSON(err.Error())
 	}
 
-	if gottenOrg.OrganisationName != "" {
-		dbOrganisation.OrganisationName = gottenOrg.OrganisationName
-	}
-	if gottenOrg.OrganisationAddress != "" {
-		dbOrganisation.OrganisationAddress = gottenOrg.OrganisationAddress
-	}
-	if gottenOrg.OrganisationProfileImageUrl != "" {
-		dbOrganisation.OrganisationProfileImageUrl = gottenOrg.OrganisationProfileImageUrl
-	}
-	if gottenOrg.OrganisationOverImageUrl != "" {
-		dbOrganisation.OrganisationOverImageUrl = gottenOrg.OrganisationOverImageUrl
-	}
-	if gottenOrg.OrganisationDescription != "" {
-		dbOrganisation.OrganisationDescription = gottenOrg.OrganisationDescription
+	var gottenOrganisation model.Organisation
+
+	if err := ctx.BodyParser(&gottenOrganisation); err != nil {
+		return ctx.Status(500).JSON(err.Error())
 	}
 
-	dbInstance.Save(&dbOrganisation)
+	if gottenOrganisation.OrganisationName != "" {
+		organisation.OrganisationName = gottenOrganisation.OrganisationName
+	}
+	if gottenOrganisation.OrganisationEmail != "" {
+		organisation.OrganisationName = gottenOrganisation.OrganisationEmail
+	}
+	if gottenOrganisation.OrganisationPassword != "" {
+		organisation.OrganisationName = gottenOrganisation.OrganisationPassword
+	}
+	if gottenOrganisation.OrganisationAddress != "" {
+		organisation.OrganisationAddress = gottenOrganisation.OrganisationAddress
+	}
+	if gottenOrganisation.OrganisationProfileImageUrl != "" {
+		organisation.OrganisationProfileImageUrl = gottenOrganisation.OrganisationProfileImageUrl
+	}
+	if gottenOrganisation.OrganisationOverImageUrl != "" {
+		organisation.OrganisationOverImageUrl = gottenOrganisation.OrganisationOverImageUrl
+	}
+	if gottenOrganisation.OrganisationDescription != "" {
+		organisation.OrganisationDescription = gottenOrganisation.OrganisationDescription
+	}
 
-	return ctx.Status(200).JSON(&dbOrganisation)
+	update := bson.M{"organisationname": organisation.OrganisationName,
+		"organisationemail":           organisation.OrganisationEmail,
+		"organisationpassword":        organisation.OrganisationPassword,
+		"organisationaddress":         organisation.OrganisationAddress,
+		"organisationprofileimageurl": organisation.OrganisationProfileImageUrl,
+		"organisationoverimageurl":    organisation.OrganisationOverImageUrl,
+		"organisationdescription":     organisation.OrganisationDescription}
 
-}
-
-func DeleteOrganisation(ctx *fiber.Ctx) error {
-
-	id, err := ctx.ParamsInt("id")
+	updateResult, err := orgCollection.UpdateOne(goCtx, bson.M{"_id": objId}, bson.M{"$set": update})
 
 	if err != nil {
+		return ctx.Status(500).JSON(err.Error())
+	}
+
+	if updateResult.MatchedCount != 1 {
+		return ctx.Status(500).JSON("Something went wrong")
+	}
+	return ctx.Status(200).JSON(&organisation)
+
+}
+func DeleteOrganisation(ctx *fiber.Ctx) error {
+
+	id := ctx.Params("id")
+
+	if id == "" {
 		return ctx.Status(400).JSON("Please insert valid id of organisation (int)")
 	}
 
-	dbOrg, db := getOrganisation(id)
-	dbErr := db.Error
+	objId, _ := primitive.ObjectIDFromHex(id)
 
-	if dbErr != nil {
-		return ctx.Status(500).JSON("something went wrong")
+	result, err := orgCollection.DeleteOne(goCtx, bson.M{"_id": objId})
+
+	if err != nil {
+		ctx.Status(500).JSON(err.Error())
 	}
 
-	if dbOrg.ID == 0 {
-		return ctx.Status(404).JSON("No Org found wit id: " + strconv.Itoa(id))
+	if result.DeletedCount < 1 {
+		ctx.Status(404).JSON("No user found with id")
 	}
-
-	db.Delete(&dbOrg)
 
 	return ctx.Status(200).JSON("Deleted")
 }
 
 func OrganisationRouter(app *fiber.App) {
 
+	InitMongoOrgCollection()
 	app.Post("/org/", CreateOrganisation)
 	app.Get("/org/:id", GetOrganisation)
 	app.Put("/org/:id", PutOrganisation)
