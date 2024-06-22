@@ -2,8 +2,13 @@ package routers
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/log"
 	"go.mod/model"
+	"go.mod/util"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"gorm.io/gorm"
+	"math/rand"
+	"time"
 )
 
 func getTicket(id int) (model.Organisation, *gorm.DB) {
@@ -16,33 +21,71 @@ func getTicket(id int) (model.Organisation, *gorm.DB) {
 
 }
 
-//
-//func CreateTicket(ctx *fiber.Ctx) error {
-//
-//	var gottenOrganisation util.Organisation
-//	err := ctx.BodyParser(&gottenOrganisation)
-//
-//	if err != nil {
-//		return ctx.Status(400).JSON(err.Error())
-//	}
-//
-//	timeNow := time.Time{}
-//	organisation := model.Organisation{
-//		CreatedAt:                   timeNow,
-//		OrganisationName:            gottenOrganisation.OrganisationName,
-//		OrganisationAddress:         gottenOrganisation.OrganisationAddress,
-//		OrganisationProfileImageUrl: gottenOrganisation.OrganisationProfileImageUrl,
-//		OrganisationOverImageUrl:    gottenOrganisation.OrganisationOverImageUrl,
-//		OrganisationDescription:     gottenOrganisation.OrganisationDescription,
-//		OrganisationEmail:           gottenOrganisation.OrganisationEmail,
-//		OrganisationPassword:        gottenOrganisation.OrganisationPassword,
-//	}
-//
-//	dbInstance.Create(&organisation)
-//
-//	return ctx.Status(200).JSON(&organisation)
-//}
-//
+func CreateTicket(ctx *fiber.Ctx) error {
+
+	var gottenOrganisation util.Organisation
+	err := ctx.BodyParser(&gottenOrganisation)
+
+	if err != nil {
+		return ctx.Status(400).JSON(err.Error())
+	}
+
+	timeNow := time.Time{}
+	organisation := model.Organisation{
+		CreatedAt:                   timeNow,
+		OrganisationName:            gottenOrganisation.OrganisationName,
+		OrganisationAddress:         gottenOrganisation.OrganisationAddress,
+		OrganisationProfileImageUrl: gottenOrganisation.OrganisationProfileImageUrl,
+		OrganisationOverImageUrl:    gottenOrganisation.OrganisationOverImageUrl,
+		OrganisationDescription:     gottenOrganisation.OrganisationDescription,
+		OrganisationEmail:           gottenOrganisation.OrganisationEmail,
+		OrganisationPassword:        gottenOrganisation.OrganisationPassword,
+	}
+
+	return ctx.Status(200).JSON(&organisation)
+}
+
+func CreateEmptyTicket(eventId string) string {
+
+	var id = primitive.NewObjectID()
+	var ticketID = GenerateTicketId()
+
+	ticket := model.Ticket{
+		ID:       id,
+		EventID:  eventId,
+		TicketID: ticketID,
+	}
+
+	_, err := orgCollection.InsertOne(goCtx, &ticket)
+
+	if err != nil {
+		log.Info("failed to insert")
+	}
+
+	return id.String()
+}
+
+func GenerateTicketId() string {
+
+	const characters = "!@#$%&*1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+	var ticketId string = ""
+
+	for i := 0; i <= 10; i++ {
+
+		position := characters[randomIntRang(0, len(characters))]
+		ticketId = ticketId + getCharacterAtPosition(characters, int(position))
+	}
+	return ticketId
+}
+
+func getCharacterAtPosition(strings string, position int) string {
+	return string([]rune(strings)[position])
+}
+func randomIntRang(min int, max int) int {
+	return rand.Intn(max-min) + min
+}
+
 //func GetTicket(ctx *fiber.Ctx) error {
 //
 //	id, err := ctx.ParamsInt("id")

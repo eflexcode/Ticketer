@@ -1,12 +1,11 @@
 package routers
 
 import (
-	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"go.mod/model"
 	"go.mod/util"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"gorm.io/gorm"
-	"strconv"
 )
 
 func getEvent(id int) (model.Event, *gorm.DB) {
@@ -27,10 +26,10 @@ func CreateEvent(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(400).JSON(err.Error())
 	}
-
-	//var numberOfTicketPrinted = numberOfTicketPrinted
+	var id = primitive.NewObjectID()
 
 	event := model.Event{
+		ID:                      id,
 		NumberOFTicketPrinted:   gottenEvent.NumberOFTicketPrinted,
 		NumberOfTicketSold:      gottenEvent.NumberOfTicketSold,
 		NumberOfTicketAvailable: gottenEvent.NumberOfTicketAvailable,
@@ -44,46 +43,34 @@ func CreateEvent(ctx *fiber.Ctx) error {
 		OrganisationId:          gottenEvent.OrganisationId,
 	}
 
-	organisation, db := getOrganisation(gottenEvent.OrganisationId)
-	eventsDb := organisation.Events
-	//eventsDb = append(eventsDb, event)
-	organisation.Events = eventsDb
-
-	//dbInstance.Create(&event)
-
-	//eventID := dbresult.RowsAffected
-
-	//var eventid int64 = eventID
-
-	fmt.Printf("db test type " + strconv.Itoa(int(event.ID)))
-	db.Save(&organisation)
+	//fmt.Printf("db test type " + strconv.Itoa(int(event.ID)))
 
 	return ctx.Status(200).JSON(&event)
 }
 
-func GetEvent(ctx *fiber.Ctx) error {
-
-	id, err := ctx.ParamsInt("id")
-
-	if err != nil {
-		return ctx.Status(400).JSON("Please insert valid id of event (int)")
-	}
-
-	event, db := getEvent(id)
-	dbErr := db.Error
-
-	if dbErr != nil {
-		return ctx.Status(500).JSON("Something went wrong")
-	}
-
-	if event.ID == 0 {
-		errMessage := "No event found with id: " + strconv.Itoa(id)
-		return ctx.Status(404).JSON(errMessage)
-	}
-
-	return ctx.Status(200).JSON(&event)
-
-}
+//func GetEvent(ctx *fiber.Ctx) error {
+//
+//	id, err := ctx.ParamsInt("id")
+//
+//	if err != nil {
+//		return ctx.Status(400).JSON("Please insert valid id of event (int)")
+//	}
+//
+//	event, db := getEvent(id)
+//	dbErr := db.Error
+//
+//	if dbErr != nil {
+//		return ctx.Status(500).JSON("Something went wrong")
+//	}
+//
+//	if event.ID == 0 {
+//		errMessage := "No event found with id: " + strconv.Itoa(id)
+//		return ctx.Status(404).JSON(errMessage)
+//	}
+//
+//	return ctx.Status(200).JSON(&event)
+//
+//}
 
 //func PutEvent(ctx *fiber.Ctx) error {
 //

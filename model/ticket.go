@@ -1,13 +1,14 @@
 package model
 
-import "time"
+import (
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type Ticket struct {
-	ID           uint      `json:"id" gorm:"primaryKey"`
-	EventID      int       `json:"event_id"`
-	Event        Event     `json:"event"  gorm:"foreignKey:EventID"`
-	TicketNumber int       `json:"ticket_number"`
-	BuyDate      time.Time `json:"buy_date"`
-	BoughtBy     string    `json:"bought_by"`
-	BoughtFor    string    `json:"bought_for"`
+	ID        primitive.ObjectID `bson:"_id"`
+	EventID   string             `json:"event_id"`
+	TicketID  string             `json:"ticket_id"`
+	BuyDate   string             `json:"buy_date"`
+	BoughtBy  string             `json:"bought_by"`
+	BoughtFor string             `json:"bought_for"`
 }
