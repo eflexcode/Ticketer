@@ -3,9 +3,11 @@ package routers
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
+	"go.mod/database"
 	"go.mod/model"
 	"go.mod/util"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"gorm.io/gorm"
 	"math/rand"
 	"time"
@@ -19,6 +21,12 @@ func getTicket(id int) (model.Organisation, *gorm.DB) {
 
 	return organisation, dbResult
 
+}
+
+var ticketCollection *mongo.Collection
+
+func InitMongoTicket() {
+	ticketCollection = database.GetCollection(mongoClient, "ticket")
 }
 
 func CreateTicket(ctx *fiber.Ctx) error {
@@ -45,10 +53,11 @@ func CreateTicket(ctx *fiber.Ctx) error {
 	return ctx.Status(200).JSON(&organisation)
 }
 
-func CreateEmptyTicket(eventId string) string {
+func PrintEmptyEventTicket(eventId string) string {
 
 	var id = primitive.NewObjectID()
 	var ticketID = GenerateTicketId()
+	//realEventId := eventId[11:34]
 
 	ticket := model.Ticket{
 		ID:       id,
@@ -56,13 +65,13 @@ func CreateEmptyTicket(eventId string) string {
 		TicketID: ticketID,
 	}
 
-	_, err := orgCollection.InsertOne(goCtx, &ticket)
+	_, err := ticketCollection.InsertOne(goCtx, &ticket)
 
 	if err != nil {
 		log.Info("failed to insert")
 	}
 
-	return id.String()
+	return id.Hex()
 }
 
 func GenerateTicketId() string {
@@ -73,9 +82,10 @@ func GenerateTicketId() string {
 
 	for i := 0; i <= 10; i++ {
 
-		position := characters[randomIntRang(0, len(characters))]
+		position := randomIntRang(1, len(characters))
 		ticketId = ticketId + getCharacterAtPosition(characters, int(position))
 	}
+
 	return ticketId
 }
 
@@ -182,7 +192,7 @@ func randomIntRang(min int, max int) int {
 //}
 
 func TicketRouter(app *fiber.App) {
-
+	InitMongoTicket()
 	//app.Post("/ticket/", CreateTicket)
 	//app.Get("/ticket/:id", GetOrganisation)
 	//app.Put("/ticket/:id", PutOrganisation)

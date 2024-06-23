@@ -16,5 +16,6 @@ type Event struct {
 	EventDate               string             `json:"event_date"`
 	TicketStartSalesDate    string             `json:"ticket_start_sales_date"`
 	TicketEndSalesDate      string             `json:"ticket_end_sales_date"`
-	OrganisationId          int                `json:"organisation_id"`
+	TicketIds               []string           `json:"ticket_ids"`
+	OrganisationId          string             `json:"organisation_id"`
 }
