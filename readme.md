@@ -102,7 +102,7 @@ buy ticket to event `````{domain}/event?event_id=yourevent_id&user_id=example_us
 
 delete event `````{domain}/event/id`````
 
-expected json when creating organisation:
+expected json when creating event:
 
 ```json
 {
