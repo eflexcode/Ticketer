@@ -11,17 +11,23 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"gorm.io/gorm"
+	"log"
 	"strconv"
 )
 
-func getEvent(id int) (model.Event, *gorm.DB) {
+func getEvent(id string) model.Event {
 
 	var event model.Event
 
-	dbResult := dbInstance.Find(&event, "id = ?", id)
+	objId, _ := primitive.ObjectIDFromHex(id)
 
-	return event, dbResult
+	err := eventCollection.FindOne(goCtx, bson.M{"_id": objId}).Decode(&event)
+
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	return event
 
 }
 
@@ -118,6 +124,29 @@ func GetEventByName(ctx *fiber.Ctx) error {
 	}
 	fmt.Printf("Normal find pagination info: %+v\n", result.Pagination)
 	return ctx.Status(200).JSON(events)
+}
+
+//func BuyTicket(ctx *fiber.Ctx) error {
+//
+//	id := ctx.Params("id")
+//
+//	if id == "" {
+//		return ctx.Status(400).JSON("Please insert valid id of event (int)")
+//	}
+//
+//	if err != nil {
+//		return ctx.Status(500).JSON(err.Error())
+//	}
+//
+//}
+
+func CheckIfEventIdIfValid(eventId string) bool {
+	var event = getEvent(eventId)
+
+	if event.EvenName == "" {
+		return false
+	}
+	return true
 }
 
 func PutEvent(ctx *fiber.Ctx) error {
@@ -232,5 +261,6 @@ func EventRouter(app *fiber.App) {
 	app.Get("/event/", GetEventByName)
 	app.Put("/event/:id", PutEvent)
 	app.Delete("/event/:id", DeleteEvent)
+	//app.Delete("/event/buy_ticket/:id", BuyTicket)
 
 }

@@ -5,12 +5,11 @@ import (
 	"github.com/gofiber/fiber/v2/log"
 	"go.mod/database"
 	"go.mod/model"
-	"go.mod/util"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"gorm.io/gorm"
 	"math/rand"
-	"time"
 )
 
 func getTicket(id int) (model.Organisation, *gorm.DB) {
@@ -29,29 +28,29 @@ func InitMongoTicket() {
 	ticketCollection = database.GetCollection(mongoClient, "ticket")
 }
 
-func CreateTicket(ctx *fiber.Ctx) error {
-
-	var gottenOrganisation util.Organisation
-	err := ctx.BodyParser(&gottenOrganisation)
-
-	if err != nil {
-		return ctx.Status(400).JSON(err.Error())
-	}
-
-	timeNow := time.Time{}
-	organisation := model.Organisation{
-		CreatedAt:                   timeNow,
-		OrganisationName:            gottenOrganisation.OrganisationName,
-		OrganisationAddress:         gottenOrganisation.OrganisationAddress,
-		OrganisationProfileImageUrl: gottenOrganisation.OrganisationProfileImageUrl,
-		OrganisationOverImageUrl:    gottenOrganisation.OrganisationOverImageUrl,
-		OrganisationDescription:     gottenOrganisation.OrganisationDescription,
-		OrganisationEmail:           gottenOrganisation.OrganisationEmail,
-		OrganisationPassword:        gottenOrganisation.OrganisationPassword,
-	}
-
-	return ctx.Status(200).JSON(&organisation)
-}
+//func CreateTicket(ctx *fiber.Ctx) error {
+//
+//	var gottenOrganisation util.Organisation
+//	err := ctx.BodyParser(&gottenOrganisation)
+//
+//	if err != nil {
+//		return ctx.Status(400).JSON(err.Error())
+//	}
+//
+//	timeNow := time.Time{}
+//	organisation := model.Organisation{
+//		CreatedAt:                   timeNow,
+//		OrganisationName:            gottenOrganisation.OrganisationName,
+//		OrganisationAddress:         gottenOrganisation.OrganisationAddress,
+//		OrganisationProfileImageUrl: gottenOrganisation.OrganisationProfileImageUrl,
+//		OrganisationOverImageUrl:    gottenOrganisation.OrganisationOverImageUrl,
+//		OrganisationDescription:     gottenOrganisation.OrganisationDescription,
+//		OrganisationEmail:           gottenOrganisation.OrganisationEmail,
+//		OrganisationPassword:        gottenOrganisation.OrganisationPassword,
+//	}
+//
+//	return ctx.Status(200).JSON(&organisation)
+//}
 
 func PrintEmptyEventTicket(eventId string) string {
 
@@ -92,33 +91,33 @@ func GenerateTicketId() string {
 func getCharacterAtPosition(strings string, position int) string {
 	return string([]rune(strings)[position])
 }
+
 func randomIntRang(min int, max int) int {
 	return rand.Intn(max-min) + min
 }
 
-//func GetTicket(ctx *fiber.Ctx) error {
-//
-//	id, err := ctx.ParamsInt("id")
-//
-//	if err != nil {
-//		return ctx.Status(400).JSON("Please insert valid id of user (int)")
-//	}
-//
-//	organisation, db := getOrganisation(id)
-//	dbErr := db.Error
-//
-//	if dbErr != nil {
-//		return ctx.Status(500).JSON("Something went wrong")
-//	}
-//
-//	if organisation.ID == 0 {
-//		errMessage := "No user found with id: " + strconv.Itoa(id)
-//		return ctx.Status(404).JSON(errMessage)
-//	}
-//
-//	return ctx.Status(200).JSON(&organisation)
-//
-//}
+func GetTicket(ctx *fiber.Ctx) error {
+
+	id := ctx.Params("id")
+
+	if id == "" {
+		return ctx.Status(400).JSON("Please insert valid id of user (int)")
+	}
+
+	objId, _ := primitive.ObjectIDFromHex(id)
+
+	var ticket model.Ticket
+
+	err := ticketCollection.FindOne(goCtx, bson.M{"_id": objId}).Decode(&ticket)
+
+	if err != nil {
+		return ctx.Status(500).JSON("Something went wrong")
+	}
+
+	return ctx.Status(200).JSON(&ticket)
+
+}
+
 //
 //func PutTicket(ctx *fiber.Ctx) error {
 //
@@ -194,7 +193,7 @@ func randomIntRang(min int, max int) int {
 func TicketRouter(app *fiber.App) {
 	InitMongoTicket()
 	//app.Post("/ticket/", CreateTicket)
-	//app.Get("/ticket/:id", GetOrganisation)
+	app.Get("/ticket/:id", GetTicket)
 	//app.Put("/ticket/:id", PutOrganisation)
 	//app.Delete("/ticket/:id", DeleteOrganisation)
 

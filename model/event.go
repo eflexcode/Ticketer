@@ -17,5 +17,6 @@ type Event struct {
 	TicketStartSalesDate    string             `json:"ticket_start_sales_date"`
 	TicketEndSalesDate      string             `json:"ticket_end_sales_date"`
 	TicketIds               []string           `json:"ticket_ids"`
+	BoughtTicketIds         []string           `json:"bought_ticket_ids"`
 	OrganisationId          string             `json:"organisation_id"`
 }

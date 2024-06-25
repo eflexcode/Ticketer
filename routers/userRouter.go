@@ -138,6 +138,48 @@ func PutUser(ctx *fiber.Ctx) error {
 
 	return ctx.Status(500).JSON("something went wrong")
 }
+func BookmarkEvent(ctx *fiber.Ctx) error {
+
+	id := ctx.Params("id")
+	eventId := ctx.Params("event_id")
+
+	if id == "" {
+		return ctx.Status(400).JSON("Please insert valid id of user")
+	}
+
+	if eventId == "" {
+		return ctx.Status(400).JSON("Please insert valid id of event")
+	}
+
+	var user model.User
+	var isEventIdValid = CheckIfEventIdIfValid(eventId)
+
+	if !isEventIdValid {
+		return ctx.Status(200).JSON("Invalid event id")
+	}
+
+	objId, _ := primitive.ObjectIDFromHex(id)
+
+	err := userCollection.FindOne(goCtx, bson.M{"_id": objId}).Decode(&user)
+
+	if err != nil {
+		return ctx.Status(500).JSON(err.Error())
+	}
+
+	user.EventsInterestedIn = append(user.EventsInterestedIn, eventId)
+
+	update := bson.M{"eventsinterestedin": user.EventsInterestedIn}
+	updateResult, err := userCollection.UpdateOne(goCtx, bson.M{"_id": objId}, bson.M{"$set": update})
+	if err != nil {
+		return ctx.Status(500).JSON(err.Error())
+	}
+
+	if updateResult.MatchedCount == 1 {
+		return ctx.Status(200).JSON("Event added to bookmarks")
+	}
+
+	return ctx.Status(500).JSON("something went wrong")
+}
 
 func DeleteUser(ctx *fiber.Ctx) error {
 	id := ctx.Params("id")
@@ -166,6 +208,7 @@ func UserRouter(app *fiber.App) {
 	app.Post("/user/", CreateUser)
 	app.Get("/user/:id", GetUser)
 	app.Put("/user/:id", PutUser)
+	app.Put("/user/bookmark/:id/:event_id", BookmarkEvent)
 	app.Delete("/user/:id", DeleteUser)
 
 }
