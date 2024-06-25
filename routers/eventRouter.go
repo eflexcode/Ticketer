@@ -130,9 +130,9 @@ func GetEventByName(ctx *fiber.Ctx) error {
 
 func BuyTicket(ctx *fiber.Ctx) error {
 
-	eventId := ctx.Params("event_id")
-	userId := ctx.Params("user_id")
-	buyForId := ctx.Params("buy_for_id")
+	eventId := ctx.Query("event_id")
+	userId := ctx.Query("user_id")
+	buyForId := ctx.Query("buy_for_id")
 
 	if eventId == "" {
 		return ctx.Status(400).JSON("Please insert valid id of event (int)")
@@ -307,6 +307,6 @@ func EventRouter(app *fiber.App) {
 	app.Get("/event/", GetEventByName)
 	app.Put("/event/:id", PutEvent)
 	app.Delete("/event/:id", DeleteEvent)
-	app.Delete("/event/buy_ticket/", BuyTicket)
+	app.Post("/event/buy_ticket/", BuyTicket)
 
 }
