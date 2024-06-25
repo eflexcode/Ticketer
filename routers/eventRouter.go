@@ -13,6 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 	"strconv"
+	"time"
 )
 
 func getEvent(id string) model.Event {
@@ -62,6 +63,7 @@ func CreateEvent(ctx *fiber.Ctx) error {
 		EventDate:               gottenEvent.EventDate,
 		TicketStartSalesDate:    gottenEvent.TicketStartSalesDate,
 		TicketEndSalesDate:      gottenEvent.TicketEndSalesDate,
+		BoughtTicketIds:         []string{},
 		OrganisationId:          gottenEvent.OrganisationId,
 	}
 
@@ -126,19 +128,22 @@ func GetEventByName(ctx *fiber.Ctx) error {
 	return ctx.Status(200).JSON(events)
 }
 
-//func BuyTicket(ctx *fiber.Ctx) error {
-//
-//	id := ctx.Params("id")
-//
-//	if id == "" {
-//		return ctx.Status(400).JSON("Please insert valid id of event (int)")
-//	}
-//
-//	if err != nil {
-//		return ctx.Status(500).JSON(err.Error())
-//	}
-//
-//}
+func BuyTicket(ctx *fiber.Ctx) error {
+
+	eventId := ctx.Params("event_id")
+	userId := ctx.Params("user_id")
+	buyForId := ctx.Params("buy_for_id")
+
+	if eventId == "" {
+		return ctx.Status(400).JSON("Please insert valid id of event (int)")
+	}
+
+	var event = getEvent(eventId)
+
+	var salesStatrtDate = time.Parse(ti) event.TicketStartSalesDate
+	var salesEndDate = event.TicketEndSalesDate
+
+}
 
 func CheckIfEventIdIfValid(eventId string) bool {
 	var event = getEvent(eventId)
@@ -240,6 +245,18 @@ func DeleteEvent(ctx *fiber.Ctx) error {
 
 	objID, _ := primitive.ObjectIDFromHex(id)
 
+	var event = getEvent(id)
+
+	for _, ticketIds := range event.TicketIds {
+
+		DeleteTicket(ticketIds)
+	}
+	for _, boughtTicketIds := range event.BoughtTicketIds {
+
+		DeleteTicket(boughtTicketIds)
+
+	}
+
 	result, err := eventCollection.DeleteOne(goCtx, bson.M{"_id": objID})
 
 	if err != nil {
@@ -261,6 +278,6 @@ func EventRouter(app *fiber.App) {
 	app.Get("/event/", GetEventByName)
 	app.Put("/event/:id", PutEvent)
 	app.Delete("/event/:id", DeleteEvent)
-	//app.Delete("/event/buy_ticket/:id", BuyTicket)
+	app.Delete("/event/buy_ticket/", BuyTicket)
 
 }

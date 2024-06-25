@@ -118,8 +118,7 @@ func GetTicket(ctx *fiber.Ctx) error {
 
 }
 
-//
-//func PutTicket(ctx *fiber.Ctx) error {
+// func PutTicket(ctx *fiber.Ctx) error {
 //
 //	id, err := ctx.ParamsInt("id")
 //
@@ -164,31 +163,18 @@ func GetTicket(ctx *fiber.Ctx) error {
 //
 //	return ctx.Status(200).JSON(&dbOrganisation)
 //
-//}
-//
-//func DeleteTicket(ctx *fiber.Ctx) error {
-//
-//	id, err := ctx.ParamsInt("id")
-//
-//	if err != nil {
-//		return ctx.Status(400).JSON("Please insert valid id of organisation (int)")
-//	}
-//
-//	dbOrg, db := getOrganisation(id)
-//	dbErr := db.Error
-//
-//	if dbErr != nil {
-//		return ctx.Status(500).JSON("something went wrong")
-//	}
-//
-//	if dbOrg.ID == 0 {
-//		return ctx.Status(404).JSON("No Org found wit id: " + strconv.Itoa(id))
-//	}
-//
-//	db.Delete(&dbOrg)
-//
-//	return ctx.Status(200).JSON("Deleted")
-//}
+// }
+func DeleteTicket(id string) {
+
+	if id == "" {
+		return
+	}
+	objID, _ := primitive.ObjectIDFromHex(id)
+	_, err := ticketCollection.DeleteOne(goCtx, bson.M{"_id": objID})
+	if err != nil {
+		return
+	}
+}
 
 func TicketRouter(app *fiber.App) {
 	InitMongoTicket()
