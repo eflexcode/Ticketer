@@ -1,6 +1,8 @@
 package routers
 
 import (
+	"fmt"
+	. "github.com/gobeam/mongo-go-pagination"
 	"github.com/gofiber/fiber/v2"
 	"go.mod/database"
 	"go.mod/model"
@@ -8,7 +10,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"gorm.io/gorm"
+	"strconv"
 )
 
 func getEvent(id int) (model.Event, *gorm.DB) {
@@ -35,6 +39,7 @@ func CreateEvent(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(400).JSON(err.Error())
 	}
+
 	var id = primitive.NewObjectID()
 
 	ticketIds := []string{}
@@ -91,24 +96,28 @@ func GetEvent(ctx *fiber.Ctx) error {
 }
 func GetEventByName(ctx *fiber.Ctx) error {
 
-	id := ctx.Params("id")
+	keywordTitleOfEvent := ctx.Query("keyword")
+	limit, _ := strconv.Atoi(ctx.Query("limit", "30"))
+	page, _ := strconv.Atoi(ctx.Query("page", "1"))
 
-	if id == "" {
-		return ctx.Status(400).JSON("Please insert valid id of event (int)")
+	var events []model.Event
+
+	findOptions := options.Find()
+	findOptions.SetLimit(30)
+	projection := bson.D{
+		{"evenname", 1},
 	}
 
-	var event model.Event
+	regex := primitive.Regex{Pattern: keywordTitleOfEvent, Options: "i"}
+	filter := bson.M{"evenname": bson.M{"$regex": regex}}
 
-	objId, _ := primitive.ObjectIDFromHex(id)
-
-	err := eventCollection.FindOne(goCtx, bson.M{"_id": objId}).Decode(&event)
+	result, err := New(eventCollection).Context(goCtx).Limit(int64(limit)).Page(int64(page)).Select(projection).Filter(filter).Decode(&events).Find()
 
 	if err != nil {
 		return ctx.Status(500).JSON(err.Error())
 	}
-
-	return ctx.Status(200).JSON(&event)
-
+	fmt.Printf("Normal find pagination info: %+v\n", result.Pagination)
+	return ctx.Status(200).JSON(events)
 }
 
 func PutEvent(ctx *fiber.Ctx) error {
@@ -220,7 +229,7 @@ func EventRouter(app *fiber.App) {
 	InitMongoEventCollection()
 	app.Post("/event/", CreateEvent)
 	app.Get("/event/:id", GetEvent)
-	app.Get("/event/:name", GetEventByName)
+	app.Get("/event/", GetEventByName)
 	app.Put("/event/:id", PutEvent)
 	app.Delete("/event/:id", DeleteEvent)
 
