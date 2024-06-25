@@ -85,6 +85,16 @@ func GetUser(ctx *fiber.Ctx) error {
 
 	return ctx.Status(200).JSON(&user)
 }
+func GetUser2(id string) model.User {
+
+	var user model.User
+
+	objId, _ := primitive.ObjectIDFromHex(id)
+
+	_ = userCollection.FindOne(goCtx, bson.M{"_id": objId}).Decode(&user)
+
+	return user
+}
 
 func PutUser(ctx *fiber.Ctx) error {
 
@@ -137,6 +147,18 @@ func PutUser(ctx *fiber.Ctx) error {
 	}
 
 	return ctx.Status(500).JSON("something went wrong")
+}
+func PutUserTicket(id string, ticketId string) {
+
+	var user model.User
+
+	objId, _ := primitive.ObjectIDFromHex(id)
+
+	_ = userCollection.FindOne(goCtx, bson.M{"_id": objId}).Decode(&user)
+
+	user.Tickets = append(user.Tickets, ticketId)
+	update := bson.M{"tickets": user.Tickets}
+	_, _ = userCollection.UpdateOne(goCtx, bson.M{"_id": objId}, bson.M{"$set": update})
 }
 func BookmarkEvent(ctx *fiber.Ctx) error {
 

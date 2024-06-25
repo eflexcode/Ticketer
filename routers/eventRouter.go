@@ -139,10 +139,39 @@ func BuyTicket(ctx *fiber.Ctx) error {
 	}
 
 	var event = getEvent(eventId)
+	layout := "2006-01-02T15:04:05.000Z"
+	salesStatDate, _ := time.Parse(layout, event.TicketStartSalesDate)
+	salesEndDate, _ := time.Parse(layout, event.TicketEndSalesDate)
 
-	var salesStatrtDate = time.Parse(ti) event.TicketStartSalesDate
-	var salesEndDate = event.TicketEndSalesDate
+	if !salesStatDate.Equal(time.Time{}) || !salesStatDate.After(time.Time{}) {
+		return ctx.Status(400).JSON("Cannot sale ticket at this time")
+	}
+	if salesEndDate.After(time.Time{}) {
+		return ctx.Status(400).JSON("Cannot sale ticket at this time")
+	}
 
+	// this code is not tested 😀
+	if len(event.TicketIds) != 0 {
+
+		ticketId := event.TicketIds[0]
+		PutTicket(ticketId, userId, buyForId)
+		PutUserTicket(buyForId, ticketId)
+
+		event.BoughtTicketIds = append(event.BoughtTicketIds, ticketId)
+		update := bson.M{"boughtticketids": event.BoughtTicketIds}
+		objId, _ := primitive.ObjectIDFromHex(eventId)
+		_, _ = eventCollection.UpdateOne(goCtx, bson.M{"_id": objId}, bson.M{"$set": update})
+
+		event.TicketIds = RemoveIndex(event.TicketIds, 0)
+
+		update2 := bson.M{"ticketids": event.BoughtTicketIds}
+		_, _ = eventCollection.UpdateOne(goCtx, bson.M{"_id": objId}, bson.M{"$set": update2})
+	}
+
+	return ctx.Status(200).JSON("ticket bought successfully")
+}
+func RemoveIndex(s []string, index int) []string {
+	return append(s[:index], s[index+1:]...)
 }
 
 func CheckIfEventIdIfValid(eventId string) bool {

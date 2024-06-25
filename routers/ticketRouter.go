@@ -10,6 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"gorm.io/gorm"
 	"math/rand"
+	"time"
 )
 
 func getTicket(id int) (model.Organisation, *gorm.DB) {
@@ -118,52 +119,20 @@ func GetTicket(ctx *fiber.Ctx) error {
 
 }
 
-// func PutTicket(ctx *fiber.Ctx) error {
-//
-//	id, err := ctx.ParamsInt("id")
-//
-//	if err != nil {
-//		return ctx.Status(400).JSON("Please insert valid id of organisation (int)")
-//	}
-//
-//	dbOrganisation, dbReturnedInstance := getOrganisation(id)
-//	dbErr := dbReturnedInstance.Error
-//
-//	if dbErr != nil {
-//		return ctx.Status(500).JSON("Something went wrong")
-//	}
-//
-//	if dbOrganisation.ID == 0 {
-//		return ctx.Status(404).JSON("No org found with id: " + strconv.Itoa(id))
-//	}
-//
-//	var gottenOrg model.Organisation
-//
-//	if err := ctx.BodyParser(&gottenOrg); err != nil {
-//		return ctx.Status(500).JSON(err.Error())
-//	}
-//
-//	if gottenOrg.OrganisationName != "" {
-//		dbOrganisation.OrganisationName = gottenOrg.OrganisationName
-//	}
-//	if gottenOrg.OrganisationAddress != "" {
-//		dbOrganisation.OrganisationAddress = gottenOrg.OrganisationAddress
-//	}
-//	if gottenOrg.OrganisationProfileImageUrl != "" {
-//		dbOrganisation.OrganisationProfileImageUrl = gottenOrg.OrganisationProfileImageUrl
-//	}
-//	if gottenOrg.OrganisationOverImageUrl != "" {
-//		dbOrganisation.OrganisationOverImageUrl = gottenOrg.OrganisationOverImageUrl
-//	}
-//	if gottenOrg.OrganisationDescription != "" {
-//		dbOrganisation.OrganisationDescription = gottenOrg.OrganisationDescription
-//	}
-//
-//	dbInstance.Save(&dbOrganisation)
-//
-//	return ctx.Status(200).JSON(&dbOrganisation)
-//
-// }
+func PutTicket(id string, boughtBy string, boughtFor string) {
+
+	objId, _ := primitive.ObjectIDFromHex(id)
+
+	var ticket model.Ticket
+
+	_ = ticketCollection.FindOne(goCtx, bson.M{"_id": objId}).Decode(&ticket)
+
+	now := time.Now()
+
+	update := bson.M{"boughtby": boughtBy, "boughtfor": boughtFor, "buy_date": now.String()}
+	_, _ = ticketCollection.UpdateOne(goCtx, bson.M{"_id": objId}, bson.M{"$set": update})
+
+}
 func DeleteTicket(id string) {
 
 	if id == "" {
